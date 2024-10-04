@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>매끄러운 파라메트릭 꽃병 디자인</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; background-color: white; }
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .control-group {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div class="control-group">
+            <label for="topWidth">상단 너비: <span id="topWidthValue">5</span></label><br>
+            <input type="range" id="topWidth" min="1" max="10" value="5">
+        </div>
+        <div class="control-group">
+            <label for="neckWidth">목 너비: <span id="neckWidthValue">3</span></label><br>
+            <input type="range" id="neckWidth" min="1" max="10" value="3">
+        </div>
+        <div class="control-group">
+            <label for="bellyWidth">배 너비: <span id="bellyWidthValue">7</span></label><br>
+            <input type="range" id="bellyWidth" min="1" max="10" value="7">
+        </div>
+        <div class="control-group">
+            <label for="bottomWidth">하단 너비: <span id="bottomWidthValue">4</span></label><br>
+            <input type="range" id="bottomWidth" min="1" max="10" value="4">
+        </div>
+        <div class="control-group">
+            <label for="height">높이: <span id="heightValue">10</span></label><br>
+            <input type="range" id="height" min="5" max="20" value="10">
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, vase;
+        let topWidth = 5, neckWidth = 3, bellyWidth = 7, bottomWidth = 4;
+        let height = 10, originalHeight = 10; // 원래 높이 값 저장
+
+        function init() {
+            scene = new THREE.Scene();
+
+            // 카메라 설정
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, originalHeight * 1.5);  // 초기 카메라 위치
+            camera.lookAt(0, 0, 0);  // 중앙을 바라보게 설정
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // 밝은 환경광 추가
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            // 밝은 점 조명 추가
+            const pointLight = new THREE.PointLight(0xffffff, 1.5);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
+
+            vase = createVase();
+            scene.add(vase);
+
+            animate();
+        }
+
+        function createVase() {
+            const segments = 128;
+            // 높이를 조절할 때 가로 부분은 유지하고 높이만 변동
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector2(0, -originalHeight / 2),  // 하단 점
+                new THREE.Vector2(bottomWidth, -height / 2),  // 하단 너비
+                new THREE.Vector2(bellyWidth, -height * 0.2),  // 배 곡선
+                new THREE.Vector2(neckWidth, height * 0.2),  // 목 곡선
+                new THREE.Vector2(topWidth, height / 2)  // 상단 너비
+            ], false, "catmullrom", 0.5);
+
+            const points = curve.getPoints(segments).map(p => new THREE.Vector2(p.x, p.y));
+
+            const geometry = new THREE.LatheGeometry(points, segments);
+            const material = new THREE.MeshStandardMaterial({ color: 0x8b5e3c });
+            return new THREE.Mesh(geometry, material);
+        }
+
+        function updateVase() {
+            scene.remove(vase);
+            vase.geometry.dispose();
+            vase = createVase();
+            scene.add(vase);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            vase.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+
+        document.getElementById('topWidth').addEventListener('input', function (event) {
+            topWidth = parseFloat(event.target.value);
+            document.getElementById('topWidthValue').textContent = topWidth;
+            updateVase();
+        });
+
+        document.getElementById('neckWidth').addEventListener('input', function (event) {
+            neckWidth = parseFloat(event.target.value);
+            document.getElementById('neckWidthValue').textContent = neckWidth;
+            updateVase();
+        });
+
+        document.getElementById('bellyWidth').addEventListener('input', function (event) {
+            bellyWidth = parseFloat(event.target.value);
+            document.getElementById('bellyWidthValue').textContent = bellyWidth;
+            updateVase();
+        });
+
+        document.getElementById('bottomWidth').addEventListener('input', function (event) {
+            bottomWidth = parseFloat(event.target.value);
+            document.getElementById('bottomWidthValue').textContent = bottomWidth;
+            updateVase();
+        });
+
+        document.getElementById('height').addEventListener('input', function (event) {
+            height = parseFloat(event.target.value);
+            document.getElementById('heightValue').textContent = height;
+            updateVase();
+        });
+
+        window.addEventListener('resize', function () {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        init();
+    </script>
+</body>
+</html>
